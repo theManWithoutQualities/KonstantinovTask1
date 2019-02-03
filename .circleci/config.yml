@@ -50,6 +50,7 @@ jobs:
           if [ "${CIRCLE_BRANCH}" == "master" ]; then
             bash ./scripts/deploy-fabric.sh
           fi
+
 #          if [ "${CIRCLE_BRANCH}" == "dev" ]; then
 #            bash ./scripts/deploy-appcenter.sh
 #          fi
