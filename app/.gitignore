@@ -1,5 +1,4 @@
 # built application files
-*.apk
 *.aab
 *.ap_
 
@@ -13,7 +12,6 @@
 *.class
 
 # generated files
-release/**
 bin/**
 gen/**
 out/**
@@ -38,3 +36,8 @@ gradle-app.setting
 .gradletasknamecache
 .gradle/**
 build/**
+
+release/**
+!release/app-release.apk
+
+
