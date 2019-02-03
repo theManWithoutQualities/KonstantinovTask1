@@ -28,7 +28,7 @@ appCenter {
     apiToken = "f88d63f25800fd31559850c698a1346002b0c42b"
     appName = "KonstantinovTask1"
     appOwner = "konst007-tut.by"
-    artifact = file("/home/circleci/code/app/build/outputs/apk/release/app-release.apk")
+    artifact = file("${project.projectDir}/build/outputs/apk/release/app-release.apk")
     destination = "Konstantinov"
     releaseNotes = "Это dev! Task1 success"
     verbose = true
