@@ -1,14 +1,19 @@
 buildscript {
     repositories {
         maven { url 'https://maven.fabric.io/public' }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
 
     dependencies {
         classpath 'io.fabric.tools:gradle:1.+'
+        classpath "gradle.plugin.appcenter-publish-plugin:plugin:0.0.2"
     }
 }
 apply plugin: 'com.android.application'
 apply plugin: 'io.fabric'
+apply plugin: "com.teamwanari.appcenter-publish-plugin"
 
 repositories {
     maven { url 'https://maven.fabric.io/public' }
@@ -18,6 +23,16 @@ repositories {
 def keystorePropertiesFile = file("keystore.properties")
 def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+appCenter {
+    apiToken = "f88d63f25800fd31559850c698a1346002b0c42b"
+    appName = "KonstantinovTask1"
+    appOwner = "konst007-tut.by"
+    artifact = file("${project.projectDir}/build/outputs/apk/release/app-release.apk")
+    destination = "Konstantinov"
+    releaseNotes = "Это dev! Task1 success"
+    verbose = true
+}
 
 android {
     signingConfigs {
