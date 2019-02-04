@@ -6,7 +6,6 @@ task findbugs(type: FindBugs) {
     excludeFilter = file("$project.rootDir/tools/rules-findbugs.xml")
     classes = fileTree("$project.buildDir/intermediates/javac")
     source = fileTree('src/main/java')
-    effort 'max'
     reportLevel = "high"
     classpath = files()
 

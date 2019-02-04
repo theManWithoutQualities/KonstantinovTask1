@@ -1,55 +1,137 @@
+aliases:
+- &environment
+  working_directory: ~/code
+  docker:
+  - image: circleci/android:api-28-alpha
+  environment:
+    JVM_OPTS: -Xmx3200m
+
+- &tests
+  - "Lint"
+  - "Checkstyle"
+  - "PMD"
+  - "FindBugs"
+
 version: 2
+workflows:
+  version: 2
+  build_test_deploy:
+    jobs:
+    - "Dependencies"
+    - "Lint":
+        requires:
+        - "Dependencies"
+    - "Checkstyle":
+        requires:
+        - "Dependencies"
+    - "PMD":
+        requires:
+        - "Dependencies"
+    - "FindBugs":
+        requires:
+        - "Dependencies"
+    - "Build":
+        requires: *tests
+    - "Deploy":
+        requires:
+        - "Build"
 jobs:
-  build:
-    working_directory: ~/code
-    docker:
-    - image: circleci/android:api-28-alpha
-    environment:
-      JVM_OPTS: -Xmx3200m
+  "Dependencies":
+    <<: *environment
     steps:
     - checkout
     - restore_cache:
         key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
     - run:
-       name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-       command: sudo chmod +x ./gradlew
+        command: sudo chmod +x ./gradlew
     - run:
-        name: Download Dependencies
         command: ./gradlew androidDependencies
     - save_cache:
         paths:
         - ~/.gradle
         key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+    - persist_to_workspace:
+        root: ~/code
+        paths:
+        - ./
+
+  "Lint":
+    <<: *environment
+    steps:
+    - attach_workspace:
+        at: ~/code
     - run:
-        name: Lint Tests
         command: ./gradlew lint test
+    - store_artifacts:
+        path: app/build/reports
+        destination: lint
+    - store_test_results:
+        path: app/build/test-results
+        destination: lint
+
+  "Checkstyle":
+    <<: *environment
+    steps:
+    - attach_workspace:
+        at: ~/code
     - run:
-        name: CheckStyle Tests
         command: ./gradlew checkstyle
+    - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
+        path: app/build/reports
+        destination: checkstyle
+    - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+        path: app/build/test-results
+        destination: checkstyle
+
+  "PMD":
+    <<: *environment
+    steps:
+    - attach_workspace:
+        at: ~/code
     - run:
-        name: PMD Tests
         command: ./gradlew pmd
+    - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
+        path: app/build/reports
+        destination: pmd
+    - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
+        path: app/build/test-results
+        destination: pmd
+
+  "FindBugs":
+    <<: *environment
+    steps:
+    - attach_workspace:
+        at: ~/code
     - run:
-        name: Findbugs Tests
         command: ./gradlew findbugs
     - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
         path: app/build/reports
-        destination: reports
+        destination: findbugs
     - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
         path: app/build/test-results
-    # See https://circleci.com/docs/2.0/deployment-integrations/ for deploy examples
+        destination: findbugs
+
+  "Build":
+    <<: *environment
+    steps:
+    - attach_workspace:
+        at: ~/code
     - run:
-        name: Build
         command: ./gradlew assembleRelease
     - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
         path: app/build/outputs/apk
         destination: release
-    - deploy:
-        name: Deploy APK.
+
+  "Deploy":
+    <<: *environment
+    steps:
+    - attach_workspace:
+        at: ~/code
+    - run:
         command: |
           if [ "${CIRCLE_BRANCH}" == "master" ]; then
             bash ./scripts/deploy-fabric.sh
           fi
-          if [ "${CIRCLE_BRANCH}" == "dev" ]; then
+          if [ "${CIRCLE_BRANCH}" == "develop" ]; then
             bash ./scripts/deploy-appcenter.sh
           fi
