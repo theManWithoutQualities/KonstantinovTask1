@@ -7,10 +7,9 @@ aliases:
     JVM_OPTS: -Xmx3200m
 
 - &tests
-  - "Lint"
+  - "Lint-Findbugs"
   - "Checkstyle"
   - "PMD"
-  - "FindBugs"
 
 version: 2
 workflows:
@@ -18,7 +17,7 @@ workflows:
   build_test_deploy:
     jobs:
     - "Dependencies"
-    - "Lint":
+    - "Lint-Findbugs":
         requires:
         - "Dependencies"
     - "Checkstyle":
@@ -27,14 +26,8 @@ workflows:
     - "PMD":
         requires:
         - "Dependencies"
-    - "FindBugs":
-        requires:
-        - "Dependencies"
-    - "Build":
+    - "Build-Deploy":
         requires: *tests
-    - "Deploy":
-        requires:
-        - "Build"
 jobs:
   "Dependencies":
     <<: *environment
@@ -55,19 +48,21 @@ jobs:
         paths:
         - ./
 
-  "Lint":
+  "Lint-Findbugs":
     <<: *environment
     steps:
     - attach_workspace:
         at: ~/code
     - run:
         command: ./gradlew lint test
+    - run:
+        command: ./gradlew findbugs
     - store_artifacts:
         path: app/build/reports
-        destination: lint
+        destination: reports
     - store_test_results:
         path: app/build/test-results
-        destination: lint
+        destination: test-results
 
   "Checkstyle":
     <<: *environment
@@ -78,11 +73,7 @@ jobs:
         command: ./gradlew checkstyle
     - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
         path: app/build/reports
-        destination: checkstyle
-    - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-        path: app/build/test-results
-        destination: checkstyle
-
+        destination: reports
   "PMD":
     <<: *environment
     steps:
@@ -92,26 +83,8 @@ jobs:
         command: ./gradlew pmd
     - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
         path: app/build/reports
-        destination: pmd
-    - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-        path: app/build/test-results
-        destination: pmd
-
-  "FindBugs":
-    <<: *environment
-    steps:
-    - attach_workspace:
-        at: ~/code
-    - run:
-        command: ./gradlew findbugs
-    - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
-        path: app/build/reports
-        destination: findbugs
-    - store_test_results: # for display in Test Summary: https://circleci.com/docs/2.0/collect-test-data/
-        path: app/build/test-results
-        destination: findbugs
-
-  "Build":
+        destination: reports
+  "Build-Deploy":
     <<: *environment
     steps:
     - attach_workspace:
@@ -119,14 +92,8 @@ jobs:
     - run:
         command: ./gradlew assembleRelease
     - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
-        path: app/build/outputs/apk
+        path: app/build/outputs/apk/release
         destination: release
-
-  "Deploy":
-    <<: *environment
-    steps:
-    - attach_workspace:
-        at: ~/code
     - run:
         command: |
           if [ "${CIRCLE_BRANCH}" == "master" ]; then
